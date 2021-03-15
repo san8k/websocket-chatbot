@@ -1,0 +1,188 @@
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: PT Sans;
+    }
+
+    .chat {
+      display: flex;
+      flex-direction: column;
+      width: 1300px;
+      height: 100%;
+      margin: 0 auto;
+    }
+
+    .title {
+      color: #28534f;
+      margin: 20px auto;
+    }
+
+    .wrapper {
+      display: flex;
+    }
+
+    .block {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .block:not(:last-child) {
+      margin-right: 20px;
+    }
+
+    .field {
+      padding: 10px;
+      outline: #28534f;
+    }
+
+    .field:not(:last-child) {
+      margin-bottom: 10px;
+    }
+
+    .textarea {
+      height: 150px;
+      resize: none;
+      overflow: auto;
+    }
+
+    .button {
+      height: 30px;
+      border-radius: 2px;
+      border: none;
+      outline: none;
+      background-color: #508688;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background-color: #426d6e;
+    }
+
+    .checkboxes {
+      margin-bottom: 15px;
+    }
+
+    .preview {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      cursor: pointer;
+    }
+
+    .messages-window {
+      height: 250px;
+      width: 100%;
+      padding: 5px 10px;
+      border-radius: 2px;
+      border: 1px solid #8d8c8c;
+      overflow: auto;
+    }
+
+    .sent {
+      margin-bottom: 10px;
+
+    }
+
+    .sent.client {
+      text-align: right;
+    }
+
+    .sent__text {
+      padding: 5px 10px;
+      background-color: #97f8d7;
+      border-radius: 20px;
+    }
+
+    .sent.client .sent__text {
+      background-color: #e697f8;
+    }
+  </style>
+</head>
+<body>
+<section class="chat">
+  <h1 class="title">Send message</h1>
+  <div class="wrapper">
+    <div class="block">
+      <textarea id="text" class="field textarea" placeholder="Text message">Hi!</textarea>
+      <textarea id="bzText" class="field textarea" placeholder="BZ HTML"></textarea>
+      <input type="text" id="buttonText" class="field input" placeholder="Button text">
+    </div>
+    <div class="block">
+      <div class="checkboxes">
+        <label>
+          <input class="check" type="checkbox" id="c-text" checked>
+          <span>Text</span>
+        </label>
+        <label>
+          <input class="check" type="checkbox" id="c-bz">
+          <span>BZ</span>
+        </label>
+        <label>
+          <input class="check" type="checkbox" id="c-button">
+          <span>Button</span>
+        </label>
+      </div>
+      <button id="send" class="button">Send selected</button>
+      <pre id="sent"></pre>
+    </div>
+  </div>
+  <h2 class="title">Messages</h2>
+  <div class="wrapper">
+    <div id="msgWindow" class="messages-window"></div>
+  </div>
+</section>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+const checkboxes = Array.from(document.querySelectorAll('.check'));
+const button = document.querySelector('#send');
+const text = document.querySelector('#text');
+const bz = document.querySelector('#bzText');
+const buttonText = document.querySelector('#buttonText');
+const sent = document.querySelector('#sent');
+const msgWindow = document.querySelector('#msgWindow');
+
+const CHECKED_TO_MESSAGE = {
+  'c-text': {node: text, type: 'CHATBOT'},
+  'c-bz': {node: bz, type: 'CHATBOT_BZ'},
+  'c-button': {node: buttonText, type: 'BUTTONS'},
+};
+
+const addMsg = (data) => {
+
+  msgWindow.insertAdjacentHTML('beforeend', `<p class="sent ${data.author === 'client' ? 'client' : 'server'}"><span class="sent__text">${data.value}</span></p>`);
+};
+
+button.addEventListener('click', () => {
+  sent.innerHTML = '';
+
+  checkboxes.filter((o) => o.checked).forEach((k) => {
+    const {type, node} = CHECKED_TO_MESSAGE[k.id];
+
+    const data = {
+      type,
+      value: node.value,
+      author: 'server',
+    };
+    sent.insertAdjacentHTML('beforeend', `<p class="preview"><span>Type: ${data.type}</span><span>Author: ${data.author}</span><span>Text: ${data.value}</span></p>`);
+
+    socket.emit('sendMsg', data);
+  });
+});
+
+socket.on('addMsg', (data) => {
+  addMsg(data);
+});
+</script>
+</body>
+</html>
