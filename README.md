@@ -1,4 +1,4 @@
-#### Star socket.io chat:
+#### Start socket.io chat:
 ```npm start```
 
 #### Start simple websocket server: 
